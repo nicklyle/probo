@@ -51,5 +51,11 @@ def call_payoff(option, spot):
 def put_payoff(option, spot):
     return maximum(option.strike - spot, 0.0)
 
+def asian_call_payoff(option, spot)
+    return maximum(np.mean(spot) - option.strike, 0.0)
+
+def asian_put_payoff(option, spot)
+    return maximum(option.strike - np.mean(spot),0.0) 
+
 
 
