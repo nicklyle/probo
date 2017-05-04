@@ -150,6 +150,38 @@ def ControlVariatePricer(engine, option, data):
     #stderr = cash_flow_t.std() / np.sqrt(engine.replications)
     return price
 
+def AntitheticPricer(engine, option, data):
+    strike = option.strike
+    expiry = option.expiry
+    (spot, rate, volatility, dividend) = data.get_data()
+    
+    z = np.random.normal(size = engine.replications)
+    z = np.concatenate((z,-z))
+    spotT = spot * np.exp((rate - 0.5 * volatility * volatility)* expiry + volatility * np.sqrt(expiry) * z)
+    callT = np.maximum(spotT - strike, 0.0)
+
+    price = np.exp(-rate * expiry) * callT.mean()
+    stderr = np.std(price)
+    return price
+    return stderr
+
+def NaiveMonteCarlo(engine, option, data):
+    strike = option.strike
+    expiry = option.expiry
+    (spot, rate, volatility, dividend) = data.get_data()
+    spotT = np.empty((engine.replications, ))
+    callT = np.empty((engine.replications, ))
+
+    for i in range(engine.replications):
+        z = np.random.normal(size=1)
+        spotT[i] = spot * np.exp((rate - 0.5 * volatility * volatility)* expiry + volatility * np.sqrt(expiry) * z)
+        callT[i] = np.maximum(spotT[i] - strike, 0.0)
+
+    stderr = callT.std(ddof = 1) / np.sqrt(engine.replications)
+    price = np.exp(-rate * expiry) * callT.mean()
+    return price
+    return stderr
+
 #class BlackScholesPayoffType(enum.Enum):
 #    call = 1
 #    put = 2
