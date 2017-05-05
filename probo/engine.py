@@ -147,8 +147,9 @@ def ControlVariatePricer(engine, option, data):
         cash_flow_t[j] = option.payoff(spot_t) + beta * convar
 
     price = np.exp(-rate * expiry) * cash_flow_t.mean()
-    #stderr = cash_flow_t.std() / np.sqrt(engine.replications)
+    stderr = cash_flow_t.std() / np.sqrt(engine.replications)
     return price
+    return stderr
 
 def AntitheticPricer(engine, option, data):
     strike = option.strike
@@ -164,6 +165,30 @@ def AntitheticPricer(engine, option, data):
     stderr = np.std(price)
     return price
     return stderr
+    
+def StratifiedMonteCarloPricer(engine, option, data):
+    expiry = option.expiry
+    strike = option.strike
+    (spot, rate, vol, div) = data.get_data()
+    replications = engine.replications
+    dt = expiry / engine.time_steps
+    disc = np.exp(-rate * dt)
+
+    u = np.random.uniform(size = replications)
+    uhat = np.zeros((replications,))
+    i = np.arange(replications)
+    uhat = (u + i) / replications
+    z = norm.ppf(uhat)
+
+    spotT = spot * np.exp((rate - div - 0.5 * vol * vol) * dt + vol * np.sqrt(dt) * z)
+    payoffT = option.payoff(spotT)
+
+    price = payoffT.mean() * disc
+
+    payoffT_sd = np.std(payoffT, ddof = 1)
+    payoffT_se = payoffT_sd / np.sqrt(replications)
+
+    return (price, payoffT_se)
 
 def NaiveMonteCarlo(engine, option, data):
     strike = option.strike
@@ -179,6 +204,55 @@ def NaiveMonteCarlo(engine, option, data):
 
     stderr = callT.std(ddof = 1) / np.sqrt(engine.replications)
     price = np.exp(-rate * expiry) * callT.mean()
+    return price
+    return stderr
+    
+def GeometricAsian(spot, ):
+    dt = expiry / engine.time_steps
+    disc = np.exp(-rate * dt)
+    path = np.zeros((engine.time_steps))
+	
+    for j in range (engine.replications):
+        spot_t = spot 
+        z = np.random.normal(size = int(engine.time_steps))
+		
+        for i in range(int(engine.time_steps)):
+            t = i * dt
+            spot_tn = spot_t * np.exp((rate - div - 0.5 * vol * vol) * dt + vol * np.sqrt(dt) * z[i])
+            spot_t = spot_tn
+            path[i] = spot_tn
+			
+            for i in range(len(path)):
+                multiplied = 1 * path[i]
+
+def AsianPricer(engine, option, data):
+    expiry = option.expiry
+    strike = option.strike
+    (spot, rate, vol, div) = data.get_data()
+    dt = expiry / engine.time_steps
+    disc = np.exp(-rate * dt)
+    erddt = np.exp((rate - div) * dt)
+    beta = -1.0
+    price = 0.0
+    cash_flow_t = np.zeros((engine.replications, ))
+ 
+for j in range (engine.replications):
+		spot_t = spot 
+		convar = 0.0
+		z = np.random.normal(size = int(engine.time_steps))
+		
+		for i in range(int(engine.time_steps)):
+			t = i * dt
+			geometric = GeometricAsian()
+			spot_tn = spot_t * np.exp((rate - div - 0.5 * vol * vol) * dt + vol * np.sqrt(dt) * z[i])
+			convar = convar + geometric * (spot_tn - spot_t * erddt)
+			spot_t = spot_tn
+		
+		cash_flow_t[j] = option.payoff(spot_t) + beta * convar
+			
+    price = cash_flow_t.mean() * disc
+    stderr = cash_flow_t.std() / np.sqrt(engine.replications)
+
     return price
     return stderr
 
